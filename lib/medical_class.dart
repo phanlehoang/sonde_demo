@@ -27,9 +27,9 @@ class Medical {
   get getGlucoseinfusion_6H12H22H => this.glucose_infusion_6H12H22H;
   set setGlucoseinfusion_6H12H22H(String value) =>
       this.glucose_infusion_6H12H22H = value;
-  void setInitialGlucoseinfusion_6H12H22H() =>
+  void setInitialGlucoseinfusion_6H12H22H(value2) =>
       this.glucose_infusion_6H12H22H = """ 
--	 Bổ sung 1UI novorapid cho mỗi 15g CHO  
+-	 Bổ sung ${num.parse((this._initialStateBool ? (value2 * 1 / 15) : (value2 * 1 / 15)).toStringAsFixed(4))} UI 
 """; //  6h – 9h - 12h - 15h - 18h – 21h
 
 // nội dung phương án cho tiêm Insulin
@@ -42,7 +42,7 @@ class Medical {
   get getYInsu22H => this.yInsu22H;
   void setYInsu22H(double value1) => this.yInsu22H = """ 
 - Tiêm dưới da insulin tác dụng chậm :
-    + Liều khởi đầu: ${num.parse((this._lastStateBool ? (value1 * 0.24) : (value1 * 0.2)).toStringAsFixed(4))} UI/ngày 
+    + Liều khởi đầu: ${num.parse((this._lastStateBool ? (value1 * 0.2 + 2) : (value1 * 0.2)).toStringAsFixed(4))} UI/ngày 
     + Glargine/ Detemir 1 lần/24h hoặc NPH 2 lần/ ngày cách nhau 12h
 """;
 
@@ -115,8 +115,12 @@ class Medical {
     }
   }
 
-  // danh sách trạng thái tiêm đạt hay không (8 lần / ngày)
+  // danh sách trạng thái tiêm đạt hay không (12 lần / ngày)
   List<double> _listResultInjection = [
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
     -1.0,
     -1.0,
     -1.0,
@@ -153,6 +157,10 @@ class Medical {
     "none",
     "none",
     "none",
+    "none",
+    "none",
+    "none",
+    "none",
     "none"
   ];
   get getListTimeResultInjection => this._listTimeResultInjection;
@@ -160,7 +168,7 @@ class Medical {
       this._listTimeResultInjection = list;
   double getItemListResultInjection(int i) => this._listResultInjection[i];
   void addItemListResultInjectionItem(String value) {
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; i < 12; i++) {
       if (_listResultInjection[i] + 1.0 == 0) {
         _listResultInjection[i] = double.parse(value);
         String s = DateTime.now().toString().substring(0, 16);
@@ -189,7 +197,7 @@ class Medical {
 
   // loại bỏ lần tiêm cuối trong danh sách
   void RemoveLastItemInjection() {
-    for (var i = 7; i >= 0; i--) {
+    for (var i = 11; i >= 0; i--) {
       if (_listResultInjection[i] != -1) {
         _listResultInjection[i] = -1;
         _listTimeResultInjection[i] = "none";
@@ -217,7 +225,7 @@ class Medical {
       : false;
   // lấy ra kết quả cuối cùng
   double getLastFaildedResultValue() {
-    for (int i = 7; i >= 0; i--) {
+    for (int i = 11; i >= 0; i--) {
       if (this._listResultInjection[i] != -1)
         return this._listResultInjection[i];
     }
@@ -230,15 +238,15 @@ class Medical {
   bool getItemCheckFlag(int i) =>
       getCheckGlucozo(getItemListResultInjection(i)) == 0 ? true : false;
   int getCountInject() {
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; i < 12; i++) {
       if (this._listResultInjection[i] == -1) return i;
     }
-    return 8;
+    return 12;
   }
 
   // Reset value default;
   void resetInjectionValueDefault() {
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; i < 12; i++) {
       this._listResultInjection[i] = -1;
       this._listTimeResultInjection[i] = "none";
     }
@@ -286,7 +294,7 @@ class Medical {
     int count = 0;
     for (var i = 0; i < getCountInject(); i++) {
       !getItemCheckFlag(i) ? count++ : null;
-      if (count >= 5) {
+      if (count >= 7) {
         return 0; // không đạt mục tiêu
       }
     }
@@ -312,7 +320,12 @@ class Medical {
             this._content_display =
                 "Bạn phải đợi đến 9h để đo đường máu mao mạch";
           } else {
-            this._content_display += " ${glucose_infusion_6H12H22H} ";
+            if (!_initialStateBool) {
+              this._content_display +=
+                  " ${glucose_infusion_6H12H22H} ${yInsu22H}";
+            } else {
+              this._content_display += " ${glucose_infusion_6H12H22H}";
+            }
             if (getCheckGlucozo(this.getLastFaildedResultValue()) == 1) {
               this._setSloveFailedContext(2);
               this._content_display += this.sloveFailedContext;
@@ -406,7 +419,7 @@ class Medical {
             this.timeNextDay = DateFormat('dd-MM-yyyy')
                 .format(DateTime.now()); // update time day
           } else {
-            if (this.isVisibleWeight) {s
+            if (this.isVisibleWeight) {
               this._content_display = "Nhập cân nặng hiện tại (Kg)";
             } else {
               if (!_initialStateBool) {

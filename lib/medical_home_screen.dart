@@ -532,6 +532,49 @@ class _MedicalHomeScreenState extends State<MedicalHomeScreen>
                               ],
                             ),
                           ),
+                          //Hiển thị số CHO
+                          Visibility(
+                            visible: medicalObject.isVisibleCarbon &&
+                                medicalObject.getInitialStateBool,
+                            child: Column(
+                              children: [
+                                SizedBox(width: widthDevideMethod(0.05)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      ' Nhập lượng CarbonHydrat(CHO) : ',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                    SizedBox(
+                                      width: 80,
+                                      height: 40,
+                                      child: TextField(
+                                        controller: _enterWeightController,
+                                        maxLength: 5,
+                                        enableSuggestions: false,
+                                        autocorrect: false,
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(decimal: true),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                              RegExp('[0-9.]')),
+                                        ],
+                                        decoration: const InputDecoration(
+                                          counter: Offstage(),
+                                        ),
+                                        style: const TextStyle(fontSize: 20),
+                                        onSubmitted: (value) {
+                                          _editingController.text = '';
+                                          _showDialogInputWeight(value);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -710,6 +753,52 @@ class _MedicalHomeScreenState extends State<MedicalHomeScreen>
     );
   }
 
+  //  verifyle kết quả  đo CHO
+  Future<void> _showDialogInputCHO(String value) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('CHO hiện tại'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Giá trị bạn nhập vào là ${value}'),
+                Text('nhấn "Yes" để xác nhận chính xác hoặc "No" để nhập lại'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Yes'),
+              onPressed: () {
+                setState(() {
+                  medicalObject
+                      .setChangeVisibleCarbon(); // ẩn thanh nhập cân nặng = false
+                  medicalObject
+                      .setYInsu22H(double.parse(value)); // thay đổi liểu UI
+                  medicalObject
+                      .setChangeVisibleButtonNext(); // hiện nút chuyển tiếp = true
+                  medicalObject.setChangeStatus(); // thay đổi trạng thái
+                  medicalObject.setChangeCheckDoneTask(); // done task = true
+                  medicalObject.timeNextValid(); // done
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // xử lý logic
   Future<void> _logicStateInfomation(String value) async {
     medicalObject
@@ -737,20 +826,20 @@ class _MedicalHomeScreenState extends State<MedicalHomeScreen>
           // add label vào list history
           medicalObject.addLabelDatatoListHistoryFailed();
           // kiểm tra xem có thất bại lúc 22h không để chờ 1 ngày
-          if (getCheckOpenCloseTimeStatus('22:00', '22:30')) {
-            medicalObject.updateTimeNextDay();
-            medicalObject.setDelaySolution1DayAt22h();
-            medicalObject
-                .setChangeVisibleButtonNext(); // hiện lại nút next // = flase
-            medicalObject
-                .setChangeVisibleGlucose(); // ẩn thanh nhập glucose // = false
-            medicalObject.setChangeCheckCurrentGlucose(); // qua bước nhập =true
-            medicalObject
-                .setChangeCheckDoneTask(); // đã hiển thị phương án // true
-            medicalObject.timeNext = '22:00_22:30';
-          } else {
-            medicalObject.addItemListHistory(value);
-          }
+          // if (getCheckOpenCloseTimeStatus('21:00', '21:30')) {
+          //   medicalObject.updateTimeNextDay();
+          //   medicalObject.setDelaySolution1DayAt22h();
+          //   medicalObject
+          //       .setChangeVisibleButtonNext(); // hiện lại nút next // = flase
+          //   medicalObject
+          //       .setChangeVisibleGlucose(); // ẩn thanh nhập glucose // = false
+          //   medicalObject.setChangeCheckCurrentGlucose(); // qua bước nhập =true
+          //   medicalObject
+          //       .setChangeCheckDoneTask(); // đã hiển thị phương án // true
+          //   medicalObject.timeNext = '21:00_21:30';
+          // } else {
+          //   medicalObject.addItemListHistory(value);
+          // }
         }
       } else if (medicalObject.getCheckPassInjection() == 1) {
         medicalObject.resetInjectionValueDefault();
@@ -767,7 +856,7 @@ class _MedicalHomeScreenState extends State<MedicalHomeScreen>
       // kiểm tra xem đúng  ngày không
       if (medicalObject.checkTimeNextDay() && medicalObject.checkTimeNext()) {
         // Hiển thị phác độ theo giờ
-        if (!getCheckOpenCloseTimeStatus('22:00', '22:30') ||
+        if (!getCheckOpenCloseTimeStatus('21:00', '21:30') ||
             medicalObject.getInitialStateBool) {
           print("co nhay vo day !");
           setState(() {
